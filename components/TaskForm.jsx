@@ -1,48 +1,113 @@
-import {useState} from "react";
+import { useState } from "react";
 import API from "/src/api.js";
 
-function TaskForm({fetchTasks}){
-    const[title,setTitle]=useState("");
-    const [description,setDescription]=useState("");
+function TaskForm({ fetchTasks }) {
+
+    const [title, setTitle] = useState("");
+    const [description, setDescription] = useState("");
+
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
     const handleSubmit = async (e) => {
-    e.preventDefault();
 
-    if (title.trim() === "" || description.trim() === "") {
-        alert("Please enter all fields");
-        return;
-    }
+        e.preventDefault();
 
-    try {
+        setError("");
 
-        await API.post("/", {
-            title,
-            description,
-            status:"Pending"
-        });
+        // Input Validation
+        if (title.trim() === "" || description.trim() === "") {
+            setError("Please enter all fields.");
+            return;
+        }
 
-        alert("Task Added Successfully");
+        if (title.trim().length < 3) {
+            setError("Title should contain at least 3 characters.");
+            return;
+        }
 
-        setTitle("");
-        setDescription("");
+        if (description.trim().length < 5) {
+            setError("Description should contain at least 5 characters.");
+            return;
+        }
 
-        fetchTasks();
+        if (title.length > 50) {
+            setError("Title cannot exceed 50 characters.");
+            return;
+        }
 
-    } catch (error) {
-        alert("Unable to Add Task");
-        console.log(error);
-    }
-};
-return(
-    <form onSubmit={handleSubmit} className="task-form">
-        <input type="text" placeholder="Enter Task Title" value={title} onChange={(e)=>setTitle(e.target.value)}/>
+        if (description.length > 200) {
+            setError("Description cannot exceed 200 characters.");
+            return;
+        }
 
-        <input type="text" placeholder="Enter description" value={description} onChange={(e)=>setDescription(e.target.value)}/>
+        setLoading(true);
 
-        <button type="submit">
-            Add Task
-        </button>
+        try {
 
-    </form>
-);
+            await API.post("/", {
+                title,
+                description,
+                status: "Pending"
+            });
+
+            alert("Task Added Successfully");
+
+            setTitle("");
+            setDescription("");
+
+            fetchTasks();
+
+        } catch (err) {
+
+            console.log(err);
+
+            setError("Unable to add task. Please try again.");
+
+        } finally {
+
+            setLoading(false);
+
+        }
+
+    };
+
+    return (
+
+        <form onSubmit={handleSubmit} className="task-form">
+
+            {error && (
+                <p className="error-message">
+                    {error}
+                </p>
+            )}
+
+            <input
+                type="text"
+                placeholder="Enter Task Title"
+                value={title}
+                maxLength={50}
+                onChange={(e) => setTitle(e.target.value)}
+            />
+
+            <textarea
+                placeholder="Enter Description"
+                value={description}
+                maxLength={200}
+                rows="3"
+                onChange={(e) => setDescription(e.target.value)}
+            ></textarea>
+
+            <button
+                type="submit"
+                disabled={loading}
+            >
+                {loading ? "Adding..." : "Add Task"}
+            </button>
+
+        </form>
+
+    );
 }
+
 export default TaskForm;

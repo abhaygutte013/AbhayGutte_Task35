@@ -9,12 +9,34 @@ function App() {
 
     const [tasks, setTasks] = useState([]);
 
+    // Loading state
+    const [loading, setLoading] = useState(false);
+
+    // Error message
+    const [error, setError] = useState("");
+
+    // Fetch all tasks
     const fetchTasks = async () => {
+
+        setLoading(true);
+        setError("");
+
         try {
+
             const res = await API.get("/");
+
             setTasks(res.data.data);
+
         } catch (err) {
+
             console.log(err);
+
+            setError("Unable to load tasks. Please check if the server is running.");
+
+        } finally {
+
+            setLoading(false);
+
         }
     };
 
@@ -26,6 +48,20 @@ function App() {
         <div className="container">
 
             <h1>Todo List</h1>
+
+            {/* Error Message */}
+            {error && (
+                <p className="error-message">
+                    {error}
+                </p>
+            )}
+
+            {/* Loading Message */}
+            {loading && (
+                <p className="loading-message">
+                    Loading tasks...
+                </p>
+            )}
 
             <SearchBar
                 setTasks={setTasks}

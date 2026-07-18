@@ -7,45 +7,102 @@ function TaskList({ tasks, fetchTasks }) {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
 
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    // Delete Task
     const deleteTask = async (id) => {
-        try {
-            const confirmDelete = window.confirm("Delete this task?");
 
-if(!confirmDelete) return;
+        const confirmDelete = window.confirm("Delete this task?");
 
-await API.delete(`/${id}`);
-            fetchTasks();
-        } catch (error) {
-            console.log(error);
+        if (!confirmDelete) {
+            return;
         }
+
+        setLoading(true);
+        setError("");
+
+        try {
+
+            await API.delete(`/${id}`);
+
+            fetchTasks();
+
+        } catch (err) {
+
+            console.log(err);
+
+            setError("Unable to delete task.");
+
+        } finally {
+
+            setLoading(false);
+
+        }
+
     };
 
-    const updateStatus = async(task)=>{
+    // Change Status
+    const updateStatus = async (task) => {
 
-    try{
+        setLoading(true);
+        setError("");
 
-        await API.patch(`/${task._id}/status`,{
-            status:
-            task.status==="Pending"
-            ?"Completed"
-            :"Pending"
-        });
+        try {
 
-        fetchTasks();
+            await API.patch(`/${task._id}/status`, {
+                status:
+                    task.status === "Pending"
+                        ? "Completed"
+                        : "Pending"
+            });
 
-    }catch(error){
-        console.log(error);
-    }
+            fetchTasks();
 
-}
+        } catch (err) {
 
+            console.log(err);
+
+            setError("Unable to update status.");
+
+        } finally {
+
+            setLoading(false);
+
+        }
+
+    };
+
+    // Start Editing
     const startEdit = (task) => {
+
         setEditId(task._id);
         setTitle(task.title);
         setDescription(task.description);
+
     };
 
+    // Save Edited Task
     const saveEdit = async () => {
+
+        setError("");
+
+        if (title.trim() === "" || description.trim() === "") {
+            setError("Please enter all fields.");
+            return;
+        }
+
+        if (title.trim().length < 3) {
+            setError("Title should be at least 3 characters.");
+            return;
+        }
+
+        if (description.trim().length < 5) {
+            setError("Description should be at least 5 characters.");
+            return;
+        }
+
+        setLoading(true);
 
         try {
 
@@ -61,8 +118,16 @@ await API.delete(`/${id}`);
 
             fetchTasks();
 
-        } catch (error) {
-            console.log(error);
+        } catch (err) {
+
+            console.log(err);
+
+            setError("Unable to update task.");
+
+        } finally {
+
+            setLoading(false);
+
         }
 
     };
@@ -71,69 +136,106 @@ await API.delete(`/${id}`);
 
         <div className="task-list">
 
-            {tasks.map((task) => (
+            {error && (
+                <p className="error-message">
+                    {error}
+                </p>
+            )}
 
-                <div key={task._id} className="task-card">
+            {tasks.length === 0 ? (
 
-                    {
-                        editId === task._id ?
+                <p className="no-task">
+                    No tasks found.
+                </p>
 
-                            <>
-                                <input
-                                    value={title}
-                                    onChange={(e)=>setTitle(e.target.value)}
-                                />
+            ) : (
 
-                                <input
-                                    value={description}
-                                    onChange={(e)=>setDescription(e.target.value)}
-                                />
+                tasks.map((task) => (
 
-                                <button onClick={saveEdit}>
-                                    Save
-                                </button>
+                    <div key={task._id} className="task-card">
 
-                                <button onClick={()=>setEditId(null)}>
-                                    Cancel
-                                </button>
-                            </>
+                        {
 
-                            :
+                            editId === task._id ?
 
-                            <>
-                                <h2>{task.title}</h2>
+                                <>
 
-                                <p>{task.description}</p>
+                                    <input
+                                        value={title}
+                                        maxLength={50}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                    />
 
-                                <p>
-                                    <strong>Status:</strong> {task.status}
-                                </p>
+                                    <textarea
+                                        value={description}
+                                        rows="3"
+                                        maxLength={200}
+                                        onChange={(e) => setDescription(e.target.value)}
+                                    />
 
-                                <button
-                                    onClick={() => startEdit(task)}
-                                >
-                                    Edit
-                                </button>
+                                    <button
+                                        onClick={saveEdit}
+                                        disabled={loading}
+                                    >
+                                        {loading ? "Saving..." : "Save"}
+                                    </button>
 
-                                <button onClick={()=>updateStatus(task)}>
-                                    Change Status
-                                </button>
-                                <button
-                                    onClick={() => deleteTask(task._id)}
-                                >
-                                    Delete
-                                </button>
-                            </>
+                                    <button
+                                        onClick={() => setEditId(null)}
+                                        disabled={loading}
+                                    >
+                                        Cancel
+                                    </button>
 
-                    }
+                                </>
 
-                </div>
+                                :
 
-            ))}
+                                <>
+
+                                    <h2>{task.title}</h2>
+
+                                    <p>{task.description}</p>
+
+                                    <p>
+                                        <strong>Status:</strong> {task.status}
+                                    </p>
+
+                                    <button
+                                        onClick={() => startEdit(task)}
+                                        disabled={loading}
+                                    >
+                                        Edit
+                                    </button>
+
+                                    <button
+                                        onClick={() => updateStatus(task)}
+                                        disabled={loading}
+                                    >
+                                        Change Status
+                                    </button>
+
+                                    <button
+                                        onClick={() => deleteTask(task._id)}
+                                        disabled={loading}
+                                    >
+                                        Delete
+                                    </button>
+
+                                </>
+
+                        }
+
+                    </div>
+
+                ))
+
+            )}
 
         </div>
 
     );
+
 }
 
 export default TaskList;
